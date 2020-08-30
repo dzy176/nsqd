@@ -59,6 +59,17 @@ type Options struct {
 	MinOutputBufferTimeout time.Duration `flag:"min-output-buffer-timeout"`
 	OutputBufferTimeout    time.Duration `flag:"output-buffer-timeout"`
 	MaxChannelConsumers    int           `flag:"max-channel-consumers"`
+
+	// e2e message latency
+	// 计算这段时间里，点对点时间延迟
+	E2EProcessingLatencyWindowTime time.Duration `flag:"e2e-processing-latency-window-time"`
+	// 消息处理时间的百分比
+	E2EProcessingLatencyPercentiles []float64 `flag:"e2e-processing-latency-percentile" cfg:"e2e-processing-latency-percentile"'`
+
+	// 压缩
+	DeflateEnabled  bool `flag:"deflate"`
+	MaxDeflateLever int  `flag:"max-deflate-level"`
+	SnappyEnabled   bool `flag:"snappy"`
 }
 
 func NewOptions() *Options {
@@ -110,5 +121,12 @@ func NewOptions() *Options {
 		MinOutputBufferTimeout: 25 * time.Millisecond,
 		OutputBufferTimeout:    250 * time.Millisecond,
 		MaxChannelConsumers:    0,
+
+		// 默认计算一分钟内的端到端延迟
+		E2EProcessingLatencyWindowTime: time.Minute,
+
+		DeflateEnabled:  true,
+		MaxDeflateLever: 6,
+		SnappyEnabled:   true,
 	}
 }

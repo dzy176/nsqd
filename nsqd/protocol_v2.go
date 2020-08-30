@@ -2,6 +2,7 @@ package nsqd
 
 import (
 	"net"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,5 +24,10 @@ type protocolV2 struct {
 
 // 根据TCP客户端不同的请求做出相应的处理
 func (p *protocolV2) IOLoop(conn net.Conn) error {
+	var err error
+	var line []byte
+	var zeroTime time.Time
 
+	clientID := atomic.AddInt64(&p.ctx.nsqd.clinetIDSquence, 1)
+	client := newClientV2(clientID, conn, p.ctx)
 }
