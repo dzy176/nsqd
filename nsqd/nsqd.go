@@ -9,10 +9,17 @@ import (
 	"time"
 )
 
+type Client interface {
+	Stats() ClinetStats
+	IsProducer() bool
+}
+
 type NSQD struct {
 	clinetIDSquence int64
 
 	sync.RWMutex
+
+	opts atomic.Value
 
 	dl        *dirlock.DirLock
 	isLoading int32
@@ -45,4 +52,14 @@ type NSQD struct {
 func (n *NSQD) logf(level LogLevel, f string, args ...interface{}) {
 	opts := n.getOpts()
 	Logf(opts.Logger, opts.LogLevel, level, f, args...)
+}
+
+func (n *NSQD) getOpts() *Options {
+	return n.opts.Load().(*Options)
+}
+
+func (n *NSQD) AddClient(clientId int64, client Client) {
+	n.clientLock.Lock()
+	n.clients[clientId] = client
+	n.clientLock.Unlock()
 }

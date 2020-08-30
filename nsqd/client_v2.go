@@ -45,12 +45,12 @@ type clinetV2 struct {
 	FinishCount   uint64
 	RequeueCount  uint64
 
-	pubCounts map[string]uint64
+	pubCounts map[string]uint64 // 如果是生产者客户端，则统计已生产消息数量
 
 	writeLock sync.RWMutex
 	metaLock  sync.RWMutex
 
-	ID        int64
+	ID        int64 // 新增一个客户端，原子+1
 	ctx       *context
 	UserAgent string
 
@@ -58,27 +58,26 @@ type clinetV2 struct {
 
 	flateWriter *flate.Writer
 
-	Reader *bufio.Reader
-	Writer *bufio.Writer
+	Reader *bufio.Reader // tcp连接的reader
+	Writer *bufio.Writer // tcp连接的writer
 
-	OutputBufferSize    int
-	OutputBufferTimeout time.Duration
+	OutputBufferSize    int           // 写缓冲区大小
+	OutputBufferTimeout time.Duration // 写数据缓冲超时时间
 
 	HeartbeatInterval time.Duration
 
-	MsgTimeout time.Duration
+	MsgTimeout time.Duration // 消息超时时间
 
 	State          int32
-	ConnectTime    time.Time
+	ConnectTime    time.Time // 首次连接时间
 	Channel        *Channel
-	ReadyStateChan chan int
-	ExitChan       chan int
+	ReadyStateChan chan int // client是否ready
+	ExitChan       chan int // client断开信号
 
 	ClientID string
 	Hostname string
 
-	// 采样率
-	SampleTate int32
+	SampleTate int32 // 采样频率  TODO: 含义未知
 
 	IdentifyEventChan chan identifyEvent
 	SubEventChan      chan *Channel
@@ -88,4 +87,39 @@ type clinetV2 struct {
 
 	lenBuf   [4]byte
 	lenSlice []byte
+}
+
+func newClientV2(id int64, conn net.Conn, ctx *context) *clinetV2 {
+	var identifier string
+	if conn != nil {
+		identifier, _, _ = net.SplitHostPort(conn.RemoteAddr().String())
+	}
+
+	c := &clinetV2{
+		ID:     id,
+		ctx:    ctx,
+		Conn:   conn,
+		Reader: bufio.NewReaderSize(conn, defaultBufferSize),
+		Writer: bufio.NewWriterSize(conn, defaultBufferSize),
+
+		OutputBufferSize:    defaultBufferSize,
+		OutputBufferTimeout: ctx.nsqd.getOpts().OutputBufferTimeout,
+
+		MsgTimeout: ctx.nsqd.getOpts().MsgTimeout,
+
+		ReadyStateChan: make(chan int, 1),
+		ExitChan:       make(chan int),
+		ConnectTime:    time.Now(),
+		State:          stateInit,
+
+		ClientID: identifier,
+		Hostname: identifier,
+
+		SubEventChan:      make(chan *Channel, 1),
+		IdentifyEventChan: make(chan identifyEvent, 1),
+
+		HeartbeatInterval: ctx.nsqd.getOpts().ClientTimeout / 2,
+
+		pubCounts: make(map[string]uint64),
+	}
 }

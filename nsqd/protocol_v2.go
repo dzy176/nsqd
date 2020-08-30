@@ -22,7 +22,8 @@ type protocolV2 struct {
 	ctx *context
 }
 
-// 根据TCP客户端不同的请求做出相应的处理
+// 客户端分为生产者与消费者
+// IOLoop根据TCP客户端不同的请求做出相应的处理
 func (p *protocolV2) IOLoop(conn net.Conn) error {
 	var err error
 	var line []byte
@@ -30,4 +31,5 @@ func (p *protocolV2) IOLoop(conn net.Conn) error {
 
 	clientID := atomic.AddInt64(&p.ctx.nsqd.clinetIDSquence, 1)
 	client := newClientV2(clientID, conn, p.ctx)
+	p.ctx.nsqd.AddClient(clientID, client)
 }
