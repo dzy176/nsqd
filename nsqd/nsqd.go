@@ -3,6 +3,7 @@ package nsqd
 import (
 	"net"
 	"nsqd/internal"
+	"nsqd/internal/dirlock"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,7 +14,7 @@ type NSQD struct {
 
 	sync.RWMutex
 
-	dl        *internal.DirLock
+	dl        *dirlock.DirLock
 	isLoading int32
 
 	//　atomic.value: 将任意类型的数据的读写操作封装成原子操作（中间态对外不可见）
