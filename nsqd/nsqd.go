@@ -10,7 +10,7 @@ import (
 )
 
 type Client interface {
-	Stats() ClinetStats
+	Stats() ClientStats
 	IsProducer() bool
 }
 
