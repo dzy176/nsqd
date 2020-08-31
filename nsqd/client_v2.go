@@ -38,7 +38,7 @@ type identifyEvent struct {
 	MsgTimeout          time.Duration
 }
 
-type clinetV2 struct {
+type clientV2 struct {
 	ReadyCount    int64
 	InFlightCount int64
 	MessageCount  uint64
@@ -89,13 +89,13 @@ type clinetV2 struct {
 	lenSlice []byte
 }
 
-func newClientV2(id int64, conn net.Conn, ctx *context) *clinetV2 {
+func newClientV2(id int64, conn net.Conn, ctx *context) *clientV2 {
 	var identifier string
 	if conn != nil {
 		identifier, _, _ = net.SplitHostPort(conn.RemoteAddr().String())
 	}
 
-	c := &clinetV2{
+	c := &clientV2{
 		ID:     id,
 		ctx:    ctx,
 		Conn:   conn,
@@ -122,4 +122,34 @@ func newClientV2(id int64, conn net.Conn, ctx *context) *clinetV2 {
 
 		pubCounts: make(map[string]uint64),
 	}
+	c.lenSlice = c.lenBuf[:]
+	return c
+}
+
+func (c *clientV2) String() string {
+	return c.RemoteAddr().String()
+}
+
+func (c *clientV2) Identify(data identifyDataV2) error {
+
+}
+
+func (c *clientV2) Stats() ClientStats {
+	c.metaLock.RLock()
+	clientID := c.ClientID
+	hostname := c.Hostname
+	userAgent := c.UserAgent
+	pubCounts := make([]PubCount, 0, len(c.pubCounts))
+	for topic, count := range c.pubCounts {
+		pubCounts = append(pubCounts, PubCount{
+			Topic: topic,
+			Count: count,
+		})
+	}
+	c.metaLock.RUnlock()
+	stats := ClientStats{
+		Version: "V2",
+	}
+
+
 }
